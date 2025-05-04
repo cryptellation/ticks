@@ -60,7 +60,7 @@ func (wf *workflows) ticksSentryWorkflow(
 		newTickReceivedSignalChannel.Receive(ctx, &t)
 
 		// Handle new signals
-		// TODO: make new ticks signal handling more asynchronous
+		// TODO(#4): make new ticks signal handling more asynchronous
 		handleListenTicksSignals(ctx, listeners, registerSignalChannel, unregisterSignalChannel)
 
 		// Send event to all listeners
@@ -78,9 +78,9 @@ func (wf *workflows) ticksSentryWorkflow(
 	cancelListening()
 
 	// Cleanup remaining signals
-	// TODO: clean up new ticks signals when quitting workflow
-	// TODO: clean up unregister signals when quitting workflow
-	// TODO: clean up register signals and trigger a new workflow if needed when quitting workflow
+	// TODO(#5): clean up new ticks signals when quitting workflow
+	// TODO(#6): clean up unregister signals when quitting workflow
+	// TODO(#7): clean up register signals and trigger a new workflow if needed when quitting workflow
 
 	logger.Info("Stop listening to ticks",
 		"exchange", params.Exchange,

@@ -39,7 +39,7 @@ func (c client) ListenToTicks(
 	exchange, pair string,
 	callback func(ctx workflow.Context, params api.ListenToTicksCallbackWorkflowParams) error,
 ) error {
-	// TODO: get worker from parameters instead of creating a new one
+	// TODO(#2): get worker from parameters instead of creating a new one
 
 	// Create variables
 	tq := fmt.Sprintf("ListenTicks-%s", uuid.New().String())
