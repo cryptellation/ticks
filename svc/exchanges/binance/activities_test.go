@@ -34,5 +34,5 @@ func (suite *BinanceSuite) SetupTest() {
 }
 
 func (suite *BinanceSuite) TestTicks() {
-	// TODO: Implement this test
+	// TODO(#3): Implement this test
 }
