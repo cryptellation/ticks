@@ -13,8 +13,8 @@ github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
-github.com/cryptellation/candlesticks v1.0.1 h1:HprFcNHWnpBaAF3q8tQnCL95yXfMAqJmvO/pvfZqna0=
-github.com/cryptellation/candlesticks v1.0.1/go.mod h1:0R+YZ+PBJsV+jindXAzTKfCU7kq+4VpUfKhWv+028GQ=
+github.com/cryptellation/candlesticks v1.0.4 h1:OSU4OyIH1+iVsIfEBEjf8vdKOleeLqW0agdl7DV9NYo=
+github.com/cryptellation/candlesticks v1.0.4/go.mod h1:0R+YZ+PBJsV+jindXAzTKfCU7kq+4VpUfKhWv+028GQ=
 github.com/cryptellation/exchanges v1.1.0 h1:MFHZU8tDP07RhhbwPWXjn/VLI4+lW522IBvA4VB8noo=
 github.com/cryptellation/exchanges v1.1.0/go.mod h1:2iyJgSid50L76UjS5gzV3hnCeq1DS4u/tkaJuq/toKY=
 github.com/cryptellation/health v1.0.1 h1:wZp/y4z8CbSVKUWCL/+8TdPPAPWLScUrJl/YBJf5z5I=
