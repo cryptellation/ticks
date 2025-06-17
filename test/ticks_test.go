@@ -8,45 +8,59 @@ import (
 	"time"
 
 	"github.com/cryptellation/ticks/api"
+	"github.com/cryptellation/ticks/pkg/clients"
+	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 )
 
-// TestListenToTicks tests the ListenToTicks workflow.
+// TestListenToTicksWithStopListening tests that StopListeningToTicks stops the listener as expected.
 func (suite *EndToEndSuite) TestListenToTicks() {
 	exchange := "binance"
 	pair := "BTC-USDT"
 	count := 0
 
-	// WHEN registering for ticks listening
-
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	var listenErr error
+	// Create a worker
+	tq := "TestListenToTicks-TaskQueue"
+	w := worker.New(suite.client.TemporalClient(), tq, worker.Options{})
+	defer w.Stop()
 	go func() {
-		listenErr = suite.client.ListenToTicks(ctx, exchange, pair,
-			func(_ workflow.Context, params api.ListenToTicksCallbackWorkflowParams) error {
-				suite.Require().Equal(exchange, params.Tick.Exchange)
-				suite.Require().Equal(pair, params.Tick.Pair)
-				count++
-				return nil
-			})
+		suite.Require().NoError(w.Run(nil))
 	}()
 
-	// THEN the count is increased after a while
+	// Create a new client with user agent
+	client := clients.New(suite.client.TemporalClient(), clients.ClientOptions{
+		UserAgent: "TestListenToTicks",
+	})
 
+	// Prepare callback params
+	params := clients.ListenerParams{
+		Name: "TestListenToTicks",
+		Callback: func(_ workflow.Context, params api.ListenToTicksCallbackWorkflowParams) error {
+			suite.Require().Equal(exchange, params.Tick.Exchange)
+			suite.Require().Equal(pair, params.Tick.Pair)
+			count++
+			return nil
+		},
+		Worker:    w,
+		TaskQueue: tq,
+	}
+
+	// Start listening to ticks
+	err := client.ListenToTicks(context.Background(), params, exchange, pair)
+	suite.Require().NoError(err)
+
+	// Wait until at least one tick is received
 	suite.Eventually(func() bool {
 		return count > 0
 	}, 10*time.Minute, time.Second,
 		"count should be greater than 0")
 
-	// WHEN cancelling the context
+	// Stop listening
+	err = client.StopListeningToTicks(context.Background(), params.Name, exchange, pair)
+	suite.Require().NoError(err)
 
-	cancel()
-
-	// THEN no error is returned
-
-	suite.Require().NoError(listenErr)
-
-	// AND the listener workflow is stopped
-	// TODO(#74): check that the ticks listening workflow is stopped
+	// Wait a short period and check that the count does not increase further
+	prevCount := count
+	time.Sleep(5 * time.Second)
+	suite.Require().Equal(prevCount, count, "count should not increase after stopping listening")
 }

@@ -2,7 +2,6 @@ package svc
 
 import (
 	"fmt"
-	"strings"
 
 	exchangesapi "github.com/cryptellation/exchanges/api"
 	"github.com/cryptellation/ticks/api"
@@ -26,7 +25,7 @@ func (wf *workflows) RegisterForTicksListeningWorkflow(
 		SignalParams: signals.RegisterToTicksListeningSignalParams{
 			CallbackWorkflow: params.Callback,
 		},
-		WorkflowID:   fmt.Sprintf("%s-%s", strings.ToTitle(params.Exchange), params.Pair),
+		WorkflowID:   sentryWorkflowName(params.Exchange, params.Pair),
 		WorkflowName: ticksSentryWorkflowName,
 		WorkflowParams: ticksSentryWorkflowParams{
 			Exchange: params.Exchange,

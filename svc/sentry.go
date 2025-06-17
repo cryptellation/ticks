@@ -2,6 +2,8 @@ package svc
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cryptellation/ticks/api"
@@ -9,6 +11,7 @@ import (
 	"github.com/cryptellation/ticks/pkg/tick"
 	"github.com/cryptellation/ticks/svc/exchanges"
 	"github.com/cryptellation/ticks/svc/internal/signals"
+	"github.com/iancoleman/strcase"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
@@ -168,10 +171,18 @@ func sendToTickListenerRoutine(
 		var t tick.Tick
 		logger := workflow.GetLogger(ctx)
 
-		ctx = workflow.WithChildOptions(ctx, opts)
 		for {
 			// Receive next event
 			ch.Receive(ctx, &t)
+
+			// Generate a unique ID for the workflow
+			opts.WorkflowID = fmt.Sprintf(
+				"SendTick%s%s-%s",
+				strcase.ToCamel(t.Exchange),
+				strings.ReplaceAll(t.Pair, "-", ""),
+				t.Time.Format(time.RFC3339Nano),
+			)
+			ctx = workflow.WithChildOptions(ctx, opts)
 
 			// Start a new child workflow
 			err := workflow.ExecuteChildWorkflow(ctx, callback.Name, api.ListenToTicksCallbackWorkflowParams{
@@ -198,4 +209,8 @@ func sendToTickListenerRoutine(
 			"callback", callback.Name)
 		delete(listeners, callback.Name)
 	}
+}
+
+func sentryWorkflowName(exchange, pair string) string {
+	return fmt.Sprintf("Sentry%s%s", strcase.ToCamel(exchange), strings.ReplaceAll(pair, "-", ""))
 }
