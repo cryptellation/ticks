@@ -87,22 +87,6 @@ services:
     networks:
       - cryptellation-ticks
 
-  migrator:
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    image: golang:1.23.8-alpine
-    command: ["go", "run", "./cmd/worker", "database", "migrate"]
-    working_dir: /go/src/github.com/cryptellation/ticks
-    environment:
-      SQL_DSN: "host=postgresql user=cryptellation_ticks password=cryptellation_ticks dbname=cryptellation_ticks sslmode=disable"
-    volumes:
-      - gocache:/go/pkg/mod
-      - gobuild:/root/.cache/go-build
-      - ../..:/go/src/github.com/cryptellation/ticks
-    networks:
-      - cryptellation-ticks
-
 volumes:
   gocache:
   gobuild:

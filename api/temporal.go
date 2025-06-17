@@ -49,6 +49,8 @@ type (
 	// UnregisterFromTicksListeningWorkflowParams is the parameters of the
 	// UnregisterFromTicksListening workflow.
 	UnregisterFromTicksListeningWorkflowParams struct {
+		Exchange             string
+		Pair                 string
 		CallbackWorkflowName string
 	}
 
