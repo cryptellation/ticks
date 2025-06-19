@@ -16,8 +16,11 @@ import (
 
 // ListenerParams holds information for registering a callback workflow.
 type ListenerParams struct {
-	Name      string
-	Callback  func(ctx workflow.Context, params api.ListenToTicksCallbackWorkflowParams) error
+	RequesterID uuid.UUID
+
+	CallbackNamePrefix string
+	Callback           func(ctx workflow.Context, params api.ListenToTicksCallbackWorkflowParams) error
+
 	Worker    worker.Worker
 	TaskQueue string
 }
@@ -33,7 +36,7 @@ type Client interface {
 	// StopListeningToTicks unregisters a callback workflow from ticks for a given exchange and pair.
 	StopListeningToTicks(
 		ctx context.Context,
-		listener string,
+		listener uuid.UUID,
 		exchange string,
 		pair string,
 	) error
@@ -80,24 +83,32 @@ func (c client) ListenToTicks(
 		return fmt.Errorf("TaskQueue must be provided in CallbackInfo")
 	}
 
-	// Return an error if there is no listener name
-	listenerName := listener.Name
-	if listenerName == "" {
-		return fmt.Errorf("listener name must be provided")
+	// Return an error if there is no requester ID
+	if listener.RequesterID == uuid.Nil {
+		return fmt.Errorf("RequesterID must be provided")
+	}
+
+	// Generate a callback name
+	var callbackName string
+	if listener.CallbackNamePrefix != "" {
+		callbackName = fmt.Sprintf("%s-%s", listener.CallbackNamePrefix, listener.RequesterID.String())
+	} else {
+		callbackName = fmt.Sprintf("ListenToTicksCallback-%s", listener.RequesterID.String())
 	}
 
 	// Register the workflow with the provided worker
 	listener.Worker.RegisterWorkflowWithOptions(listener.Callback, workflow.RegisterOptions{
-		Name: listenerName,
+		Name: callbackName,
 	})
 
 	// Listen to ticks
 	_, err := c.registerForTicks(ctx,
 		api.RegisterForTicksListeningWorkflowParams{
-			Exchange: exchange,
-			Pair:     pair,
+			RequesterID: listener.RequesterID,
+			Exchange:    exchange,
+			Pair:        pair,
 			Callback: runtime.CallbackWorkflow{
-				Name:          listenerName,
+				Name:          callbackName,
 				TaskQueueName: listener.TaskQueue,
 			},
 		})
@@ -140,14 +151,14 @@ func (c client) registerForTicks(
 // StopListeningToTicks unregisters a callback workflow from ticks for a given exchange and pair.
 func (c client) StopListeningToTicks(
 	ctx context.Context,
-	listener string,
+	listener uuid.UUID,
 	exchange string,
 	pair string,
 ) error {
 	params := api.UnregisterFromTicksListeningWorkflowParams{
-		CallbackWorkflowName: listener,
-		Exchange:             exchange,
-		Pair:                 pair,
+		RequesterID: listener,
+		Exchange:    exchange,
+		Pair:        pair,
 	}
 
 	// Generate a unique ID for the workflow
