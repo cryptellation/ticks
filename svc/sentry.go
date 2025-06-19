@@ -11,6 +11,7 @@ import (
 	"github.com/cryptellation/ticks/pkg/tick"
 	"github.com/cryptellation/ticks/svc/exchanges"
 	"github.com/cryptellation/ticks/svc/internal/signals"
+	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/temporal"
@@ -124,26 +125,55 @@ func handleListenTicksSignals(
 	logger.Debug("Handling signals",
 		"listeners_count", len(listeners))
 
-	// Handle register signals
+	handleRegisterSignals(ctx, listeners, registerSignalChannel)
+	handleUnregisterSignals(ctx, listeners, unregisterSignalChannel)
+}
+
+func handleRegisterSignals(
+	ctx workflow.Context,
+	listeners map[string]workflow.Channel,
+	registerSignalChannel workflow.ReceiveChannel,
+) {
+	logger := workflow.GetLogger(ctx)
+
+	// Loop over register signals
 	var registerParams signals.RegisterToTicksListeningSignalParams
 	for detected := true; detected; {
+		// Receive the next register signal
 		detected = registerSignalChannel.ReceiveAsync(&registerParams)
 		if detected {
-			logger.Info("Received register signal",
-				"params", registerParams)
-			listeners[registerParams.CallbackWorkflow.Name] = workflow.NewBufferedChannel(ctx, 0)
-			workflow.Go(ctx, sendToTickListenerRoutine(registerParams.CallbackWorkflow, listeners))
+			logger.Info("Received register signal", "params", registerParams)
+
+			// Create a new listener
+			listeners[registerParams.RequesterID.String()] = workflow.NewBufferedChannel(ctx, 0)
+
+			// Start a new routine to send ticks to the listener
+			workflow.Go(ctx, sendToTickListenerRoutine(
+				registerParams.CallbackWorkflow,
+				listeners,
+				registerParams.RequesterID))
 		}
 	}
+}
 
-	// Handle unregister signals
+func handleUnregisterSignals(
+	ctx workflow.Context,
+	listeners map[string]workflow.Channel,
+	unregisterSignalChannel workflow.ReceiveChannel,
+) {
+	logger := workflow.GetLogger(ctx)
+
+	// Loop over unregister signals
 	var unregisterParams signals.UnregisterFromTicksListeningSignalParams
 	for detected := true; detected; {
+		// Receive the next unregister signal
 		detected = unregisterSignalChannel.ReceiveAsync(&unregisterParams)
 		if detected {
-			logger.Info("Received unregister signal",
-				"params", unregisterParams)
-			delete(listeners, unregisterParams.CallbackWorkflowName)
+			// Log the received unregister signal
+			logger.Info("Received unregister signal", "params", unregisterParams)
+
+			// Remove the listener
+			delete(listeners, unregisterParams.RequesterID.String())
 		}
 	}
 }
@@ -151,10 +181,16 @@ func handleListenTicksSignals(
 func sendToTickListenerRoutine(
 	callback runtime.CallbackWorkflow,
 	listeners map[string]workflow.Channel,
+	requesterID uuid.UUID,
 ) func(ctx workflow.Context) {
-	ch := listeners[callback.Name]
+	ch := listeners[requesterID.String()]
 
-	// Options
+	return func(ctx workflow.Context) {
+		processTicksForListener(ctx, ch, callback, requesterID, listeners)
+	}
+}
+
+func createChildWorkflowOptions(callback runtime.CallbackWorkflow) workflow.ChildWorkflowOptions {
 	opts := workflow.ChildWorkflowOptions{
 		TaskQueue:                callback.TaskQueueName,            // Execute in the client queue
 		ParentClosePolicy:        enums.PARENT_CLOSE_POLICY_ABANDON, // Do not close if the parent workflow closes
@@ -166,49 +202,71 @@ func sendToTickListenerRoutine(
 		opts.WorkflowExecutionTimeout = callback.ExecutionTimeout
 	}
 
-	// Return function that will send signal to new child workflow
-	return func(ctx workflow.Context) {
+	return opts
+}
+
+func processTicksForListener(
+	ctx workflow.Context,
+	ch workflow.Channel,
+	callback runtime.CallbackWorkflow,
+	requesterID uuid.UUID,
+	listeners map[string]workflow.Channel,
+) {
+	logger := workflow.GetLogger(ctx)
+
+	for {
+		// Receive next event
 		var t tick.Tick
-		logger := workflow.GetLogger(ctx)
+		ch.Receive(ctx, &t)
 
-		for {
-			// Receive next event
-			ch.Receive(ctx, &t)
-
-			// Generate a unique ID for the workflow
-			opts.WorkflowID = fmt.Sprintf(
-				"SendTick%s%s-%s",
-				strcase.ToCamel(t.Exchange),
-				strings.ReplaceAll(t.Pair, "-", ""),
-				t.Time.Format(time.RFC3339Nano),
-			)
-			ctx = workflow.WithChildOptions(ctx, opts)
-
-			// Start a new child workflow
-			err := workflow.ExecuteChildWorkflow(ctx, callback.Name, api.ListenToTicksCallbackWorkflowParams{
-				Tick: t,
-			}).Get(ctx, nil)
-
-			// Only stop if time-out
-			var timeoutErr *temporal.TimeoutError
-			if err != nil {
-				if errors.As(err, &timeoutErr) {
-					logger.Debug("Listener has timed out, exiting",
-						"callback", callback.Name)
-					break
-				}
-
-				logger.Error("Listener has errored, continuing",
-					"error", err,
-					"callback", callback.Name)
+		// Send tick to callback
+		if err := sendTickToCallback(ctx, t, callback, requesterID); err != nil {
+			if shouldStopProcessing(ctx, err, callback) {
+				break
 			}
 		}
-
-		// Remove listener as it has been in error or stopped.
-		logger.Debug("Removing listener",
-			"callback", callback.Name)
-		delete(listeners, callback.Name)
 	}
+
+	// Remove listener as it has been in error or stopped.
+	logger.Debug("Removing listener", "callback", callback.Name)
+	delete(listeners, requesterID.String())
+}
+
+func sendTickToCallback(
+	ctx workflow.Context,
+	t tick.Tick,
+	callback runtime.CallbackWorkflow,
+	requesterID uuid.UUID,
+) error {
+	// Create child workflow options
+	opts := createChildWorkflowOptions(callback)
+
+	// Generate a unique ID for the workflow
+	opts.WorkflowID = fmt.Sprintf(
+		"SendTick%s%s-%s",
+		strcase.ToCamel(t.Exchange),
+		strings.ReplaceAll(t.Pair, "-", ""),
+		t.Time.Format(time.RFC3339Nano),
+	)
+	ctx = workflow.WithChildOptions(ctx, opts)
+
+	// Start a new child workflow
+	return workflow.ExecuteChildWorkflow(ctx, callback.Name, api.ListenToTicksCallbackWorkflowParams{
+		RequesterID: requesterID,
+		Tick:        t,
+	}).Get(ctx, nil)
+}
+
+func shouldStopProcessing(ctx workflow.Context, err error, callback runtime.CallbackWorkflow) bool {
+	logger := workflow.GetLogger(ctx)
+	var timeoutErr *temporal.TimeoutError
+	if errors.As(err, &timeoutErr) {
+		logger.Debug("Listener has timed out, exiting", "callback", callback.Name)
+		return true
+	}
+
+	logger.Error("Listener has errored, continuing", "error", err, "callback", callback.Name)
+	return false
 }
 
 func sentryWorkflowName(exchange, pair string) string {

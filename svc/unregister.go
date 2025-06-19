@@ -5,6 +5,7 @@ import (
 
 	"github.com/cryptellation/ticks/api"
 	"github.com/cryptellation/ticks/svc/internal/signals"
+	"github.com/google/uuid"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -14,8 +15,8 @@ func (wf *workflows) UnregisterFromTicksListeningWorkflow(
 	params api.UnregisterFromTicksListeningWorkflowParams,
 ) (api.UnregisterFromTicksListeningWorkflowResults, error) {
 	// Ensure the required parameters are provided
-	if params.CallbackWorkflowName == "" {
-		return api.UnregisterFromTicksListeningWorkflowResults{}, errors.New("callbackWorkflowName must be provided")
+	if params.RequesterID == uuid.Nil {
+		return api.UnregisterFromTicksListeningWorkflowResults{}, errors.New("RequesterID must be provided")
 	}
 	if params.Exchange == "" {
 		return api.UnregisterFromTicksListeningWorkflowResults{}, errors.New("exchange must be provided")
@@ -26,7 +27,7 @@ func (wf *workflows) UnregisterFromTicksListeningWorkflow(
 
 	// Prepare the signal parameters for unregistering
 	signalParams := signals.UnregisterFromTicksListeningSignalParams{
-		CallbackWorkflowName: params.CallbackWorkflowName,
+		RequesterID: params.RequesterID,
 	}
 
 	// Send the unregister signal to the sentry workflow

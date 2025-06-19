@@ -9,6 +9,7 @@ import (
 
 	"github.com/cryptellation/ticks/api"
 	"github.com/cryptellation/ticks/pkg/clients"
+	"github.com/google/uuid"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 )
@@ -33,8 +34,9 @@ func (suite *EndToEndSuite) TestListenToTicks() {
 	})
 
 	// Prepare callback params
+	id := uuid.New()
 	params := clients.ListenerParams{
-		Name: "TestListenToTicks",
+		RequesterID: id,
 		Callback: func(_ workflow.Context, params api.ListenToTicksCallbackWorkflowParams) error {
 			suite.Require().Equal(exchange, params.Tick.Exchange)
 			suite.Require().Equal(pair, params.Tick.Pair)
@@ -56,7 +58,7 @@ func (suite *EndToEndSuite) TestListenToTicks() {
 		"count should be greater than 0")
 
 	// Stop listening
-	err = client.StopListeningToTicks(context.Background(), params.Name, exchange, pair)
+	err = client.StopListeningToTicks(context.Background(), id, exchange, pair)
 	suite.Require().NoError(err)
 
 	// Wait a short period and check that the count does not increase further

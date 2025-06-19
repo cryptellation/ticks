@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/cryptellation/runtime"
 	"github.com/cryptellation/ticks/pkg/tick"
+	"github.com/google/uuid"
 )
 
 const (
@@ -20,15 +21,17 @@ type (
 	// RegisterForTicksListeningWorkflowParams is the parameters of the
 	// RegisterForTicksListening workflow.
 	RegisterForTicksListeningWorkflowParams struct {
-		Exchange string
-		Pair     string
-		Callback runtime.CallbackWorkflow
+		RequesterID uuid.UUID
+		Exchange    string
+		Pair        string
+		Callback    runtime.CallbackWorkflow
 	}
 
 	// ListenToTicksCallbackWorkflowParams is the parameters of the
 	// RegisterForTicksListening callback workflow.
 	ListenToTicksCallbackWorkflowParams struct {
-		Tick tick.Tick
+		RequesterID uuid.UUID
+		Tick        tick.Tick
 	}
 
 	// RegisterForTicksListeningWorkflowResults is the results of the
@@ -47,9 +50,9 @@ type (
 	// UnregisterFromTicksListeningWorkflowParams is the parameters of the
 	// UnregisterFromTicksListening workflow.
 	UnregisterFromTicksListeningWorkflowParams struct {
-		Exchange             string
-		Pair                 string
-		CallbackWorkflowName string
+		RequesterID uuid.UUID
+		Exchange    string
+		Pair        string
 	}
 
 	// UnregisterFromTicksListeningWorkflowResults is the results of the

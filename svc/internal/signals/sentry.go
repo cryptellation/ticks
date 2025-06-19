@@ -3,6 +3,7 @@ package signals
 import (
 	"github.com/cryptellation/runtime"
 	"github.com/cryptellation/ticks/pkg/tick"
+	"github.com/google/uuid"
 )
 
 // RegisterToTicksListeningSignalName is the name of the signal to send when
@@ -12,6 +13,7 @@ const RegisterToTicksListeningSignalName = "RegisterToTicksListeningSignal"
 type (
 	// RegisterToTicksListeningSignalParams is the parameters of the RegisterToTicksListeningSignal.
 	RegisterToTicksListeningSignalParams struct {
+		RequesterID      uuid.UUID
 		CallbackWorkflow runtime.CallbackWorkflow
 	}
 )
@@ -23,7 +25,7 @@ const UnregisterFromTicksListeningSignalName = "UnregisterFromTicksListeningSign
 type (
 	// UnregisterFromTicksListeningSignalParams is the parameters of the UnregisterFromTicksListeningSignal.
 	UnregisterFromTicksListeningSignalParams struct {
-		CallbackWorkflowName string
+		RequesterID uuid.UUID
 	}
 )
 
