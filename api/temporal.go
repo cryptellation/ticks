@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/cryptellation/ticks/pkg/temporal"
 	"github.com/cryptellation/ticks/pkg/tick"
-	"go.temporal.io/sdk/worker"
 )
 
 const (
@@ -35,7 +34,6 @@ type (
 	// RegisterForTicksListeningWorkflowResults is the results of the
 	// RegisterForTicksListening workflow.
 	RegisterForTicksListeningWorkflowResults struct {
-		Worker worker.Worker
 	}
 )
 
