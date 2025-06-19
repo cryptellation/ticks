@@ -1,7 +1,7 @@
 package signals
 
 import (
-	temporalutils "github.com/cryptellation/ticks/pkg/temporal"
+	"github.com/cryptellation/runtime"
 	"github.com/cryptellation/ticks/pkg/tick"
 )
 
@@ -12,7 +12,7 @@ const RegisterToTicksListeningSignalName = "RegisterToTicksListeningSignal"
 type (
 	// RegisterToTicksListeningSignalParams is the parameters of the RegisterToTicksListeningSignal.
 	RegisterToTicksListeningSignalParams struct {
-		CallbackWorkflow temporalutils.CallbackWorkflow
+		CallbackWorkflow runtime.CallbackWorkflow
 	}
 )
 

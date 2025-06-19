@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cryptellation/runtime"
 	"github.com/cryptellation/ticks/api"
-	temporalutils "github.com/cryptellation/ticks/pkg/temporal"
 	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	temporalclient "go.temporal.io/sdk/client"
@@ -96,7 +96,7 @@ func (c client) ListenToTicks(
 		api.RegisterForTicksListeningWorkflowParams{
 			Exchange: exchange,
 			Pair:     pair,
-			Callback: temporalutils.CallbackWorkflow{
+			Callback: runtime.CallbackWorkflow{
 				Name:          listenerName,
 				TaskQueueName: listener.TaskQueue,
 			},

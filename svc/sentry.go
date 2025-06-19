@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cryptellation/runtime"
 	"github.com/cryptellation/ticks/api"
-	temporalutils "github.com/cryptellation/ticks/pkg/temporal"
 	"github.com/cryptellation/ticks/pkg/tick"
 	"github.com/cryptellation/ticks/svc/exchanges"
 	"github.com/cryptellation/ticks/svc/internal/signals"
@@ -149,7 +149,7 @@ func handleListenTicksSignals(
 }
 
 func sendToTickListenerRoutine(
-	callback temporalutils.CallbackWorkflow,
+	callback runtime.CallbackWorkflow,
 	listeners map[string]workflow.Channel,
 ) func(ctx workflow.Context) {
 	ch := listeners[callback.Name]
