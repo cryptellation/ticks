@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/cryptellation/ticks/pkg/temporal"
+	"github.com/cryptellation/runtime"
 	"github.com/cryptellation/ticks/pkg/tick"
 )
 
@@ -22,7 +22,7 @@ type (
 	RegisterForTicksListeningWorkflowParams struct {
 		Exchange string
 		Pair     string
-		Callback temporal.CallbackWorkflow
+		Callback runtime.CallbackWorkflow
 	}
 
 	// ListenToTicksCallbackWorkflowParams is the parameters of the
