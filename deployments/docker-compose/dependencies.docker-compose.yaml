@@ -10,7 +10,7 @@ services:
     volumes:
       - ./postgresql:/docker-entrypoint-initdb.d/
     environment:
-      POSTGRES_PASSWORD: cryptellation_ticks
+      POSTGRES_PASSWORD: cryptellation
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
@@ -67,7 +67,7 @@ services:
     image: ghcr.io/cryptellation/exchanges
     command: ["worker", "database", "migrate"]
     environment:
-      SQL_DSN: "host=postgresql user=cryptellation_exchanges password=cryptellation_exchanges dbname=cryptellation_exchanges sslmode=disable"
+      SQL_DSN: "host=postgresql user=cryptellation password=cryptellation dbname=exchanges sslmode=disable"
     networks:
       - cryptellation-ticks
   exchanges-worker:
@@ -78,7 +78,7 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      SQL_DSN: "host=postgresql user=cryptellation_exchanges password=cryptellation_exchanges dbname=cryptellation_exchanges sslmode=disable"
+      SQL_DSN: "host=postgresql user=cryptellation password=cryptellation dbname=exchanges sslmode=disable"
       TEMPORAL_ADDRESS: temporal:7233
     env_file:
       - path: ../../.credentials.env
