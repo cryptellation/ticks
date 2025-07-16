@@ -33,7 +33,7 @@ func New(temporal temporalclient.Client, apiKey, secretKey string) (*Activities,
 		return nil, errors.New("API key cannot be empty")
 	}
 	if secretKey == "" {
-		return nil, errors.New("Secret key cannot be empty")
+		return nil, errors.New("secret key cannot be empty")
 	}
 
 	c := client.NewClient(apiKey, secretKey)
