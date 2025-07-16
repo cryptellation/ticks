@@ -27,14 +27,22 @@ type Activities struct {
 }
 
 // New will create a new binance exchanges.
-func New(temporal temporalclient.Client, apiKey, secretKey string) *Activities {
+func New(temporal temporalclient.Client, apiKey, secretKey string) (*Activities, error) {
+	// Validate that API key and secret key are not empty
+	if apiKey == "" {
+		return nil, errors.New("API key cannot be empty")
+	}
+	if secretKey == "" {
+		return nil, errors.New("secret key cannot be empty")
+	}
+
 	c := client.NewClient(apiKey, secretKey)
 	c.Logger.SetOutput(io.Discard)
 
 	return &Activities{
 		temporal: temporal,
 		client:   c,
-	}
+	}, nil
 }
 
 // Name will return the name of the exchanges.
