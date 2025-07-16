@@ -9,6 +9,7 @@
 			"cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/cmd/worker",
 			"args": ["serve"],
+            "envFile": "${workspaceFolder}/.credentials.env",
             "env": {},
 			"preLaunchTask": "Start dependencies",
             "postDebugTask": "Stop dependencies"

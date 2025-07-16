@@ -27,9 +27,10 @@ type BinanceSuite struct {
 
 func (suite *BinanceSuite) SetupTest() {
 	suite.temporal = temporal.NewMockClient(gomock.NewController(suite.T()))
-	acts := New(suite.temporal,
+	acts, err := New(suite.temporal,
 		viper.GetString(configs.EnvBinanceAPIKey),
 		viper.GetString(configs.EnvBinanceSecretKey))
+	suite.Require().NoError(err)
 	suite.activities = acts
 }
 
