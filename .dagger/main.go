@@ -88,6 +88,32 @@ func (mod *Ticks) UnitTests(sourceDir *dagger.Directory) *dagger.Container {
 		})
 }
 
+// binanceIntegrationTests runs the Binance exchange integration tests with secrets from env.
+func (mod *Ticks) binanceIntegrationTests(
+	sourceDir *dagger.Directory,
+	binanceApiKey *dagger.Secret,
+	binanceSecretKey *dagger.Secret,
+) *dagger.Container {
+	c := dag.Container().From("golang:" + goVersion() + "-alpine")
+	c = mod.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
+		WithSecretVariable("BINANCE_API_KEY", binanceApiKey).
+		WithSecretVariable("BINANCE_SECRET_KEY", binanceSecretKey).
+		WithExec([]string{"sh", "-c", "go test -v -tags=integration ./svc/exchanges/binance/... | grep -v 'no test files'"})
+	return c
+}
+
+// IntegrationTests returns all integration test containers for this service.
+func (mod *Ticks) IntegrationTests(
+	ctx context.Context,
+	sourceDir *dagger.Directory,
+	binanceApiKey *dagger.Secret,
+	binanceSecretKey *dagger.Secret,
+) []*dagger.Container {
+	return []*dagger.Container{
+		mod.binanceIntegrationTests(sourceDir, binanceApiKey, binanceSecretKey),
+	}
+}
+
 // Container returns a container with the application built in it.
 func (mod *Ticks) Container(
 	sourceDir *dagger.Directory,
