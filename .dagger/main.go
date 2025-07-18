@@ -28,7 +28,7 @@ const (
 
 type Ticks struct{}
 
-// Publish a new release
+// Publish a new release.
 func (ci *Ticks) PublishTag(
 	ctx context.Context,
 	sourceDir *dagger.Directory,
@@ -50,72 +50,116 @@ func (ci *Ticks) PublishTag(
 }
 
 // Check returns a container that runs the checker.
-func (mod *Ticks) Check(
+func (ci *Ticks) Check(
 	sourceDir *dagger.Directory,
 ) *dagger.Container {
 	c := dag.Container().From("ghcr.io/cryptellation/checker")
-	return mod.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
+	return ci.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
 		WithExec([]string{"checker"})
 }
 
 // Generate returns a container that runs the code generator.
-func (mod *Ticks) Generate(
-	ctx context.Context,
+func (ci *Ticks) Generate(
 	sourceDir *dagger.Directory,
 ) *dagger.Container {
 	c := dag.Container().From("golang:" + goVersion() + "-alpine")
-	return mod.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
+	return ci.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
 		WithExec([]string{"sh", "-c", "go generate ./... && sh scripts/check-generation.sh"})
 }
 
-// Lint runs golangci-lint on the source code in the given directory.
-func (mod *Ticks) Lint(sourceDir *dagger.Directory) *dagger.Container {
+// Lint runs golangci-lint on the main repo (./...) only.
+func (ci *Ticks) Lint(sourceDir *dagger.Directory) *dagger.Container {
 	c := dag.Container().
 		From("golangci/golangci-lint:v1.62.0").
 		WithMountedCache("/root/.cache/golangci-lint", dag.CacheVolume("golangci-lint"))
 
-	c = mod.withGoCodeAndCacheAsWorkDirectory(c, sourceDir)
+	c = ci.withGoCodeAndCacheAsWorkDirectory(c, sourceDir)
 
-	return c.WithExec([]string{"golangci-lint", "run", "--timeout", "10m"})
+	// Lint main repo only
+	c = c.WithExec([]string{"golangci-lint", "run", "--timeout", "10m", "./..."})
+
+	return c
+}
+
+// LintDagger runs golangci-lint on the .dagger directory only.
+func (ci *Ticks) LintDagger(sourceDir *dagger.Directory) *dagger.Container {
+	c := dag.Container().
+		From("golangci/golangci-lint:v1.62.0").
+		WithMountedCache("/root/.cache/golangci-lint", dag.CacheVolume("golangci-lint"))
+
+	c = ci.withGoCodeAndCacheAsWorkDirectory(c, sourceDir)
+
+	// Lint .dagger directory using parent config and module context
+	c = c.WithExec([]string{"sh", "-c", "cd .dagger && golangci-lint run --config ../.golangci.yml --timeout 10m ."})
+
+	return c
 }
 
 // UnitTests returns a container that runs the unit tests.
-func (mod *Ticks) UnitTests(sourceDir *dagger.Directory) *dagger.Container {
+func (ci *Ticks) UnitTests(sourceDir *dagger.Directory) *dagger.Container {
 	c := dag.Container().From("golang:" + goVersion() + "-alpine")
-	return mod.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
+	return ci.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
 		WithExec([]string{"sh", "-c",
 			"go test -tags=unit ./... | grep -v 'no test files'",
 		})
 }
 
 // binanceIntegrationTests runs the Binance exchange integration tests with secrets from env.
-func (mod *Ticks) binanceIntegrationTests(
+func (ci *Ticks) binanceIntegrationTests(
 	sourceDir *dagger.Directory,
-	binanceApiKey *dagger.Secret,
+	binanceAPIKey *dagger.Secret,
 	binanceSecretKey *dagger.Secret,
 ) *dagger.Container {
 	c := dag.Container().From("golang:" + goVersion() + "-alpine")
-	c = mod.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
-		WithSecretVariable("BINANCE_API_KEY", binanceApiKey).
+	c = ci.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
+		WithSecretVariable("BINANCE_API_KEY", binanceAPIKey).
 		WithSecretVariable("BINANCE_SECRET_KEY", binanceSecretKey).
 		WithExec([]string{"sh", "-c", "go test -v -tags=integration ./svc/exchanges/binance/... | grep -v 'no test files'"})
 	return c
 }
 
 // IntegrationTests returns all integration test containers for this service.
-func (mod *Ticks) IntegrationTests(
-	ctx context.Context,
+func (ci *Ticks) IntegrationTests(
 	sourceDir *dagger.Directory,
-	binanceApiKey *dagger.Secret,
+	binanceApiKey *dagger.Secret, //nolint:revive,stylecheck
 	binanceSecretKey *dagger.Secret,
 ) []*dagger.Container {
 	return []*dagger.Container{
-		mod.binanceIntegrationTests(sourceDir, binanceApiKey, binanceSecretKey),
+		ci.binanceIntegrationTests(sourceDir, binanceApiKey, binanceSecretKey),
 	}
 }
 
+// EndToEndTests runs the end-to-end tests with all required services (DB, Temporal, Ticks, Exchanges)
+// and env variables.
+func (ci *Ticks) EndToEndTests(
+	sourceDir *dagger.Directory,
+	binanceApiKey *dagger.Secret, //nolint:revive,stylecheck
+	binanceSecretKey *dagger.Secret,
+) *dagger.Container {
+	// Start shared Postgres service
+	db := PostgresService(dag, sourceDir)
+
+	// Start Temporal service (uses shared Postgres)
+	temporal := TemporalService(dag, sourceDir, db)
+
+	// Start Exchanges service and bind it to the test container (uses shared Postgres)
+	exchanges := ExchangesService(dag, sourceDir, db, temporal, binanceApiKey, binanceSecretKey)
+
+	// Start Ticks service and bind it to the test container
+	ticks := Runner(dag, sourceDir, temporal, binanceApiKey, binanceSecretKey)
+
+	c := dag.Container().From("golang:" + goVersion() + "-alpine")
+	c = ci.withGoCodeAndCacheAsWorkDirectory(c, sourceDir).
+		WithServiceBinding("temporal", temporal).
+		WithServiceBinding("ticks", ticks).
+		WithServiceBinding("exchanges", exchanges).
+		WithEnvVariable("TEMPORAL_ADDRESS", "temporal:7233")
+
+	return c.WithExec([]string{"go", "test", "-v", "-tags=e2e", "./test"})
+}
+
 // Container returns a container with the application built in it.
-func (mod *Ticks) Container(
+func (ci *Ticks) Container(
 	sourceDir *dagger.Directory,
 	// +optional
 	targetPlatform string,
@@ -148,7 +192,7 @@ func (mod *Ticks) Container(
 	})
 }
 
-func (mod *Ticks) PublishContainer(
+func (ci *Ticks) PublishContainer(
 	ctx context.Context,
 	sourceDir *dagger.Directory,
 ) error {
@@ -166,7 +210,7 @@ func (mod *Ticks) PublishContainer(
 		return err
 	}
 
-	return mod.publishContainer(ctx, sourceDir, tags)
+	return ci.publishContainer(ctx, sourceDir, tags)
 }
 
 func getDockerTags(ctx context.Context, repo Git) ([]string, error) {
@@ -200,8 +244,8 @@ func getDockerTags(ctx context.Context, repo Git) ([]string, error) {
 	return tags, nil
 }
 
-// Publishes the worker docker image
-func (mod *Ticks) publishContainer(
+// Publishes the worker docker image.
+func (ci *Ticks) publishContainer(
 	ctx context.Context,
 	sourceDir *dagger.Directory,
 	tags []string,
@@ -212,7 +256,7 @@ func (mod *Ticks) publishContainer(
 	// Get images for each platform
 	platformVariants := make([]*dagger.Container, 0, len(availablePlatforms))
 	for _, targetPlatform := range availablePlatforms {
-		runner := mod.Container(sourceDir, targetPlatform)
+		runner := ci.Container(sourceDir, targetPlatform)
 		platformVariants = append(platformVariants, runner)
 	}
 
@@ -236,7 +280,7 @@ func goVersion() string {
 	return runtime.Version()[2:]
 }
 
-func (mod *Ticks) withGoCodeAndCacheAsWorkDirectory(
+func (ci *Ticks) withGoCodeAndCacheAsWorkDirectory(
 	c *dagger.Container,
 	sourceDir *dagger.Directory,
 ) *dagger.Container {
