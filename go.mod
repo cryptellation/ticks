@@ -5,7 +5,7 @@ go 1.23.8
 require (
 	github.com/adshao/go-binance/v2 v2.8.2
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/cryptellation/candlesticks v1.0.4
+	github.com/cryptellation/candlesticks v1.1.0
 	github.com/cryptellation/exchanges v1.1.0
 	github.com/cryptellation/health v1.1.1
 	github.com/cryptellation/runtime v1.4.3
