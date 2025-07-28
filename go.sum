@@ -17,6 +17,8 @@ github.com/cryptellation/candlesticks v1.0.4 h1:OSU4OyIH1+iVsIfEBEjf8vdKOleeLqW0
 github.com/cryptellation/candlesticks v1.0.4/go.mod h1:0R+YZ+PBJsV+jindXAzTKfCU7kq+4VpUfKhWv+028GQ=
 github.com/cryptellation/exchanges v1.1.0 h1:MFHZU8tDP07RhhbwPWXjn/VLI4+lW522IBvA4VB8noo=
 github.com/cryptellation/exchanges v1.1.0/go.mod h1:2iyJgSid50L76UjS5gzV3hnCeq1DS4u/tkaJuq/toKY=
+github.com/cryptellation/exchanges v1.2.0 h1:PYhFhLz2d5ccaPAnzn3+4CCtKeTdzMPSFZVOgp9Aibw=
+github.com/cryptellation/exchanges v1.2.0/go.mod h1:6fO2AeYKdUSklP10oBdihV1Cl0cSNR/tGp362Llkw18=
 github.com/cryptellation/health v1.0.1 h1:wZp/y4z8CbSVKUWCL/+8TdPPAPWLScUrJl/YBJf5z5I=
 github.com/cryptellation/health v1.0.1/go.mod h1:V5JEOyvgWHMerjn5XyXllNSRHxCeCxKmWtT8YCz6W3c=
 github.com/cryptellation/health v1.1.1 h1:LerBgSsMME5P6WGqG40uKoZI7QZ5ISpRGTJ1Toe4lWo=
