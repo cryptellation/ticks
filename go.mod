@@ -9,7 +9,7 @@ require (
 	github.com/cryptellation/exchanges v1.2.0
 	github.com/cryptellation/health v1.1.1
 	github.com/cryptellation/runtime v1.4.3
-	github.com/cryptellation/version v1.1.0
+	github.com/cryptellation/version v1.4.0
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/spf13/cobra v1.9.1
