@@ -25,6 +25,8 @@ github.com/cryptellation/runtime v1.4.3 h1:iPH6fDILaSL+cX4YWjb0qika+G8pyjlv1qLhV
 github.com/cryptellation/runtime v1.4.3/go.mod h1:EFaH6DdIGe4eEPsapFKK5uIJZNII7MIGT2eWjl09RYU=
 github.com/cryptellation/timeseries v1.0.2 h1:Vdrp4AZ7yfBlyANtU7vT9SptBQs8vdjXyjRnkX0C7iA=
 github.com/cryptellation/timeseries v1.0.2/go.mod h1:SxqmKOjn/l5AXZGaLGA47oScXzpTcXtnmfom88uZdaY=
+github.com/cryptellation/timeseries v1.2.0 h1:x90TnFhE3H4zPWEgLLekPMG7t611cnFvNU9DnFyCiD0=
+github.com/cryptellation/timeseries v1.2.0/go.mod h1:SxqmKOjn/l5AXZGaLGA47oScXzpTcXtnmfom88uZdaY=
 github.com/cryptellation/version v1.1.0 h1:guPP4DVPj0Ie1Fnmmiv3VM4xqG7ZMJGjvrS41mHg5Pc=
 github.com/cryptellation/version v1.1.0/go.mod h1:tKR3hxz6uB6AhgA0TKM3Qp6JNAgdQ2PcB0GGcsBWQvg=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
